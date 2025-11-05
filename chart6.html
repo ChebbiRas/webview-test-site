@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Rings - Circular Metrics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .chart-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 50%;
+            transition: all 0.3s;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 10;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+        }
+
+        .back-link svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        @media (max-width: 768px) {
+            .back-link {
+                bottom: 20px;
+                left: 20px;
+                width: 45px;
+                height: 45px;
+            }
+            .back-link svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+
+        <canvas id="chart"></canvas>
+    </div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        
+    </a>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const rings = [
+            { label: 'CPU', value: 0, target: 78, color1: '#38b6ff', color2: '#0891b2' },
+            { label: 'Memory', value: 0, target: 65, color1: '#10b981', color2: '#059669' },
+            { label: 'Disk', value: 0, target: 45, color1: '#f59e0b', color2: '#d97706' },
+            { label: 'Network', value: 0, target: 89, color1: '#8b5cf6', color2: '#6d28d9' },
+            { label: 'GPU', value: 0, target: 92, color1: '#ec4899', color2: '#be185d' }
+        ];
+
+        function drawRing(centerX, centerY, radius, thickness, percentage, color1, color2, label) {
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + (Math.PI * 2 * percentage / 100);
+
+            // Background ring
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = thickness;
+            ctx.stroke();
+
+            // Progress ring with gradient
+            const gradient = ctx.createLinearGradient(
+                centerX - radius, centerY,
+                centerX + radius, centerY
+            );
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = thickness;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Inner glow
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - thickness / 2, startAngle, endAngle);
+            ctx.strokeStyle = `${color1}60`;
+            ctx.lineWidth = thickness * 0.3;
+            ctx.stroke();
+
+            // Outer glow
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + thickness / 2, startAngle, endAngle);
+            ctx.strokeStyle = `${color2}40`;
+            ctx.lineWidth = thickness * 0.2;
+            ctx.stroke();
+
+            // Center percentage
+            ctx.font = 'bold 2.5em -apple-system, sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${Math.round(percentage)}%`, centerX, centerY - 15);
+
+            // Label
+            ctx.font = 'bold 1.1em -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillText(label, centerX, centerY + 25);
+
+            // Animated pulse at end point
+            if (percentage > 5) {
+                const pulseX = centerX + radius * Math.cos(endAngle);
+                const pulseY = centerY + radius * Math.sin(endAngle);
+
+                const time = Date.now() / 500;
+                const pulseSize = 5 + Math.sin(time) * 3;
+
+                const pulseGradient = ctx.createRadialGradient(pulseX, pulseY, 0, pulseX, pulseY, pulseSize * 2);
+                pulseGradient.addColorStop(0, color2);
+                pulseGradient.addColorStop(0.5, `${color2}80`);
+                pulseGradient.addColorStop(1, 'transparent');
+
+                ctx.beginPath();
+                ctx.arc(pulseX, pulseY, pulseSize * 2, 0, Math.PI * 2);
+                ctx.fillStyle = pulseGradient;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(pulseX, pulseY, pulseSize, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            }
+        }
+
+        function drawChart() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Update values slowly
+            rings.forEach(ring => {
+                if (ring.value < ring.target) {
+                    ring.value += 0.3;
+                    if (ring.value > ring.target) ring.value = ring.target;
+                }
+            });
+
+            // Layout configuration
+            const cols = 3;
+            const rows = 2;
+            const cellWidth = width / cols;
+            const cellHeight = height / rows;
+            const maxRadius = Math.min(cellWidth, cellHeight) / 3;
+            const thickness = maxRadius / 5;
+
+            // Draw rings
+            rings.forEach((ring, index) => {
+                const col = index % cols;
+                const row = Math.floor(index / cols);
+                const x = cellWidth * col + cellWidth / 2;
+                const y = cellHeight * row + cellHeight / 2;
+
+                drawRing(x, y, maxRadius, thickness, ring.value, ring.color1, ring.color2, ring.label);
+            });
+
+            requestAnimationFrame(drawChart);
+        }
+
+        drawChart();
+    </script>
+</body>
+</html>

@@ -125,6 +125,103 @@
         .page-link:nth-child(11) { --bg-start: #e0c3fc; --bg-end: #8ec5fc; }
         .page-link:nth-child(12) { --bg-start: #fbc2eb; --bg-end: #a6c1ee; }
 
+        /* Chart section styles */
+        .section-divider {
+            margin: 50px 0 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .section-title {
+            color: #1a1a2e;
+            font-size: 1.8em;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-align: center;
+            letter-spacing: -0.02em;
+        }
+
+        .section-subtitle {
+            color: #666;
+            font-size: 0.95em;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 25px;
+            letter-spacing: 0.02em;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .chart-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 25px 15px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .chart-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--chart-color);
+            z-index: 0;
+        }
+
+        .chart-link:hover::before {
+            transform: scale(1.03);
+        }
+
+        .chart-icon {
+            position: relative;
+            z-index: 1;
+            font-size: 2em;
+            margin-bottom: 6px;
+        }
+
+        .chart-label {
+            position: relative;
+            z-index: 1;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-align: center;
+        }
+
+        .chart-link:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Individual colors for each chart */
+        .chart-link:nth-child(1) { --chart-color: #ff6b6b; }
+        .chart-link:nth-child(2) { --chart-color: #4ecdc4; }
+        .chart-link:nth-child(3) { --chart-color: #3eecac; }
+        .chart-link:nth-child(4) { --chart-color: #f59e0b; }
+        .chart-link:nth-child(5) { --chart-color: #8e44ad; }
+        .chart-link:nth-child(6) { --chart-color: #0891b2; }
+        .chart-link:nth-child(7) { --chart-color: #e67e22; }
+        .chart-link:nth-child(8) { --chart-color: #a21caf; }
+        .chart-link:nth-child(9) { --chart-color: #059669; }
+        .chart-link:nth-child(10) { --chart-color: #0e7490; }
+
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -268,8 +365,56 @@
             </a>
         </div>
 
+        <div class="section-divider">
+            <div class="section-title">Data Visualizations</div>
+            <div class="section-subtitle">Skia Charts & Interactive Graphics</div>
+        </div>
+
+        <div class="charts-grid">
+            <a href="chart1.html" class="chart-link">
+                <div class="chart-icon">📈</div>
+                <div class="chart-label">Line Chart</div>
+            </a>
+            <a href="chart2.html" class="chart-link">
+                <div class="chart-icon">🎯</div>
+                <div class="chart-label">Radial Bars</div>
+            </a>
+            <a href="chart3.html" class="chart-link">
+                <div class="chart-icon">🌊</div>
+                <div class="chart-label">Wave Flow</div>
+            </a>
+            <a href="chart4.html" class="chart-link">
+                <div class="chart-icon">✨</div>
+                <div class="chart-label">Particles</div>
+            </a>
+            <a href="chart5.html" class="chart-link">
+                <div class="chart-icon">📊</div>
+                <div class="chart-label">3D Bars</div>
+            </a>
+            <a href="chart6.html" class="chart-link">
+                <div class="chart-icon">⭕</div>
+                <div class="chart-label">Progress Rings</div>
+            </a>
+            <a href="chart7.html" class="chart-link">
+                <div class="chart-icon">📉</div>
+                <div class="chart-label">Area Chart</div>
+            </a>
+            <a href="chart8.html" class="chart-link">
+                <div class="chart-icon">🍩</div>
+                <div class="chart-label">Donut Chart</div>
+            </a>
+            <a href="chart9.html" class="chart-link">
+                <div class="chart-icon">🕸️</div>
+                <div class="chart-label">Radar Chart</div>
+            </a>
+            <a href="chart10.html" class="chart-link">
+                <div class="chart-icon">〰️</div>
+                <div class="chart-label">Flow Curves</div>
+            </a>
+        </div>
+
         <div class="footer">
-            <div class="footer-text">Select any page to view full screen</div>
+            <div class="footer-text">Select any page or chart to view full screen</div>
         </div>
     </div>
 </body>

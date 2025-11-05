@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Chart - Multi-Dimensional Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .chart-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 50%;
+            transition: all 0.3s;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 10;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+        }
+
+        .back-link svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        @media (max-width: 768px) {
+            .back-link {
+                bottom: 20px;
+                left: 20px;
+                width: 45px;
+                height: 45px;
+            }
+            .back-link svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+
+        <canvas id="chart"></canvas>
+    </div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        
+    </a>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const categories = ['Speed', 'Quality', 'Reliability', 'Security', 'Scalability', 'Performance'];
+
+        const datasets = [
+            {
+                label: 'Product A',
+                data: categories.map(() => 0),
+                target: [85, 90, 78, 88, 92, 86],
+                color: '#3b82f6',
+                fill: 'rgba(59, 130, 246, 0.3)'
+            },
+            {
+                label: 'Product B',
+                data: categories.map(() => 0),
+                target: [78, 85, 92, 80, 88, 82],
+                color: '#10b981',
+                fill: 'rgba(16, 185, 129, 0.2)'
+            }
+        ];
+
+        function drawRadarGrid(centerX, centerY, radius, levels) {
+            const angleStep = (Math.PI * 2) / categories.length;
+
+            // Draw levels
+            for (let i = 1; i <= levels; i++) {
+                const levelRadius = (radius / levels) * i;
+
+                ctx.beginPath();
+                for (let j = 0; j <= categories.length; j++) {
+                    const angle = angleStep * j - Math.PI / 2;
+                    const x = centerX + Math.cos(angle) * levelRadius;
+                    const y = centerY + Math.sin(angle) * levelRadius;
+
+                    if (j === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.05 + i * 0.02})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Level labels
+                if (i === levels) {
+                    ctx.font = '0.8em -apple-system, sans-serif';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('100', centerX, centerY - levelRadius - 5);
+                }
+            }
+
+            // Draw axes
+            categories.forEach((category, index) => {
+                const angle = angleStep * index - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Category labels
+                const labelRadius = radius + 40;
+                const labelX = centerX + Math.cos(angle) * labelRadius;
+                const labelY = centerY + Math.sin(angle) * labelRadius;
+
+                ctx.font = 'bold 1.1em -apple-system, sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(category, labelX, labelY);
+            });
+        }
+
+        function drawDataset(dataset, centerX, centerY, radius) {
+            const angleStep = (Math.PI * 2) / categories.length;
+
+            // Draw filled area
+            ctx.beginPath();
+            dataset.data.forEach((value, index) => {
+                const angle = angleStep * index - Math.PI / 2;
+                const r = (value / 100) * radius;
+                const x = centerX + Math.cos(angle) * r;
+                const y = centerY + Math.sin(angle) * r;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+
+            ctx.fillStyle = dataset.fill;
+            ctx.fill();
+
+            // Draw line
+            ctx.beginPath();
+            dataset.data.forEach((value, index) => {
+                const angle = angleStep * index - Math.PI / 2;
+                const r = (value / 100) * radius;
+                const x = centerX + Math.cos(angle) * r;
+                const y = centerY + Math.sin(angle) * r;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+
+            ctx.strokeStyle = dataset.color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw points
+            dataset.data.forEach((value, index) => {
+                const angle = angleStep * index - Math.PI / 2;
+                const r = (value / 100) * radius;
+                const x = centerX + Math.cos(angle) * r;
+                const y = centerY + Math.sin(angle) * r;
+
+                // Glow
+                const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, 15);
+                glowGradient.addColorStop(0, dataset.color);
+                glowGradient.addColorStop(1, 'transparent');
+
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, Math.PI * 2);
+                ctx.fillStyle = glowGradient;
+                ctx.fill();
+
+                // Point
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = dataset.color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            });
+        }
+
+        function drawLegend(width) {
+            const legendY = 50;
+            const legendX = width - 200;
+
+            datasets.forEach((dataset, index) => {
+                const y = legendY + index * 35;
+
+                // Color box
+                ctx.fillStyle = dataset.fill;
+                ctx.fillRect(legendX, y, 25, 20);
+                ctx.strokeStyle = dataset.color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(legendX, y, 25, 20);
+
+                // Label
+                ctx.font = 'bold 1em -apple-system, sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'left';
+                ctx.fillText(dataset.label, legendX + 35, y + 15);
+            });
+        }
+
+        function drawChart() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Animate data slowly
+            datasets.forEach(dataset => {
+                dataset.data.forEach((value, index) => {
+                    if (value < dataset.target[index]) {
+                        dataset.data[index] += 0.3;
+                        if (dataset.data[index] > dataset.target[index]) {
+                            dataset.data[index] = dataset.target[index];
+                        }
+                    }
+                });
+            });
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.32;
+
+            drawRadarGrid(centerX, centerY, radius, 5);
+
+            datasets.forEach(dataset => {
+                drawDataset(dataset, centerX, centerY, radius);
+            });
+
+            drawLegend(width);
+
+            requestAnimationFrame(drawChart);
+        }
+
+        drawChart();
+    </script>
+</body>
+</html>

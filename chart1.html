@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Line Chart - Gradient Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .chart-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 50%;
+            transition: all 0.3s;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 10;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+        }
+
+        .back-link svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        @media (max-width: 768px) {
+            .back-link {
+                bottom: 20px;
+                left: 20px;
+                width: 45px;
+                height: 45px;
+            }
+            .back-link svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </a>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Data points
+        const maxPoints = 50;
+        let dataPoints = [];
+        let time = 0;
+
+        // Generate initial random data
+        for (let i = 0; i < maxPoints; i++) {
+            dataPoints.push(Math.random() * 80 + 10);
+        }
+
+        // Update data every 1 second
+        setInterval(() => {
+            dataPoints.push(Math.random() * 80 + 10);
+            if (dataPoints.length > maxPoints) {
+                dataPoints.shift();
+            }
+        }, 1000);
+
+        function drawChart() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                const y = (height / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+
+            // Draw gradient area
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, 'rgba(255, 107, 107, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(238, 90, 111, 0.5)');
+            gradient.addColorStop(1, 'rgba(255, 107, 107, 0.1)');
+
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+
+            dataPoints.forEach((point, index) => {
+                const x = (width / (maxPoints - 1)) * index;
+                const y = height - (point / 100) * height;
+
+                if (index === 0) {
+                    ctx.lineTo(x, y);
+                } else {
+                    const prevX = (width / (maxPoints - 1)) * (index - 1);
+                    const prevY = height - (dataPoints[index - 1] / 100) * height;
+                    const cpX = (prevX + x) / 2;
+                    ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
+                }
+            });
+
+            ctx.lineTo(width, height);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Draw line
+            const lineGradient = ctx.createLinearGradient(0, 0, width, 0);
+            lineGradient.addColorStop(0, '#ff6b6b');
+            lineGradient.addColorStop(0.5, '#ee5a6f');
+            lineGradient.addColorStop(1, '#ff6b6b');
+
+            ctx.beginPath();
+            dataPoints.forEach((point, index) => {
+                const x = (width / (maxPoints - 1)) * index;
+                const y = height - (point / 100) * height;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    const prevX = (width / (maxPoints - 1)) * (index - 1);
+                    const prevY = height - (dataPoints[index - 1] / 100) * height;
+                    const cpX = (prevX + x) / 2;
+                    ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
+                }
+            });
+
+            ctx.strokeStyle = lineGradient;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Draw points
+            dataPoints.forEach((point, index) => {
+                const x = (width / (maxPoints - 1)) * index;
+                const y = height - (point / 100) * height;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = '#ff6b6b';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            });
+
+            time++;
+            requestAnimationFrame(drawChart);
+        }
+
+        drawChart();
+    </script>
+</body>
+</html>
