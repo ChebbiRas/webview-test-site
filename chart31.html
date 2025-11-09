@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sankey Flow Diagram - Data Flow</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #2b5876 0%, #4e4376 50%, #2b5876 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .chart-container { width: 100vw; height: 100vh; }
+        canvas { width: 100%; height: 100%; }
+        .back-link {
+            position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; border-radius: 50%; transition: all 0.3s; backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3); z-index: 10;
+        }
+        .back-link:hover { background: rgba(255, 255, 255, 0.35); transform: translateY(-3px); }
+        .back-link svg { width: 24px; height: 24px; fill: white; }
+    </style>
+</head>
+<body>
+    <div class="chart-container"><canvas id="chart"></canvas></div>
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </a>
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const flows = [
+            { from: { x: 0.2, y: 0.3 }, to: { x: 0.5, y: 0.2 }, value: 80, color: '#FF6B6B' },
+            { from: { x: 0.2, y: 0.5 }, to: { x: 0.5, y: 0.4 }, value: 60, color: '#4ECDC4' },
+            { from: { x: 0.2, y: 0.7 }, to: { x: 0.5, y: 0.6 }, value: 50, color: '#45B7D1' },
+            { from: { x: 0.5, y: 0.2 }, to: { x: 0.8, y: 0.25 }, value: 50, color: '#FFA07A' },
+            { from: { x: 0.5, y: 0.2 }, to: { x: 0.8, y: 0.45 }, value: 30, color: '#98D8C8' },
+            { from: { x: 0.5, y: 0.4 }, to: { x: 0.8, y: 0.45 }, value: 60, color: '#F7DC6F' },
+            { from: { x: 0.5, y: 0.6 }, to: { x: 0.8, y: 0.65 }, value: 50, color: '#BB8FCE' }
+        ];
+
+        let animProgress = 0;
+
+        function drawSankey() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, width, height);
+            if (animProgress < 1) animProgress += 0.015;
+
+            flows.forEach(flow => {
+                const fromX = flow.from.x * width;
+                const fromY = flow.from.y * height;
+                const toX = flow.to.x * width;
+                const toY = flow.to.y * height;
+                const thickness = (flow.value / 100) * 60 * animProgress;
+
+                // Draw flow with curve
+                const gradient = ctx.createLinearGradient(fromX, fromY, toX, toY);
+                gradient.addColorStop(0, flow.color);
+                gradient.addColorStop(1, flow.color + '80');
+
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY - thickness / 2);
+                const cp1x = fromX + (toX - fromX) * 0.5;
+                const cp1y = fromY - thickness / 2;
+                const cp2x = fromX + (toX - fromX) * 0.5;
+                const cp2y = toY - thickness / 2;
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, toX, toY - thickness / 2);
+                ctx.lineTo(toX, toY + thickness / 2);
+                const cp3x = fromX + (toX - fromX) * 0.5;
+                const cp3y = toY + thickness / 2;
+                const cp4x = fromX + (toX - fromX) * 0.5;
+                const cp4y = fromY + thickness / 2;
+                ctx.bezierCurveTo(cp3x, cp3y, cp4x, cp4y, fromX, fromY + thickness / 2);
+                ctx.closePath();
+
+                ctx.fillStyle = gradient;
+                ctx.globalAlpha = 0.7;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = flow.color;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Draw nodes
+            const nodes = [
+                { x: 0.2, y: 0.3, label: 'Source A', color: '#FF6B6B' },
+                { x: 0.2, y: 0.5, label: 'Source B', color: '#4ECDC4' },
+                { x: 0.2, y: 0.7, label: 'Source C', color: '#45B7D1' },
+                { x: 0.5, y: 0.2, label: 'Process 1', color: '#FFA07A' },
+                { x: 0.5, y: 0.4, label: 'Process 2', color: '#98D8C8' },
+                { x: 0.5, y: 0.6, label: 'Process 3', color: '#F7DC6F' },
+                { x: 0.8, y: 0.25, label: 'Output A', color: '#BB8FCE' },
+                { x: 0.8, y: 0.45, label: 'Output B', color: '#85C1E2' },
+                { x: 0.8, y: 0.65, label: 'Output C', color: '#D4A5A5' }
+            ];
+
+            nodes.forEach(node => {
+                const x = node.x * width;
+                const y = node.y * height;
+                const size = 15 * animProgress;
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = node.color;
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.font = 'bold 0.9em -apple-system, sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = node.x < 0.5 ? 'left' : 'right';
+                ctx.fillText(node.label, x + (node.x < 0.5 ? 25 : -25), y + 5);
+            });
+
+            requestAnimationFrame(drawSankey);
+        }
+        drawSankey();
+    </script>
+</body>
+</html>

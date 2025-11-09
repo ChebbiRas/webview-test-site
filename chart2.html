@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Radial Bar Chart - Circular Visualization</title>
     <style>
         * {
@@ -70,11 +70,42 @@
 
         @media (max-width: 768px) {
             .back-link {
-                bottom: 20px;
-                left: 20px;
-                width: 45px;
-                height: 45px;
+                bottom: 15px;
+                left: 15px;
+                width: 40px;
+                height: 40px;
             }
+            .back-link svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .back-link {
+                bottom: 12px;
+                left: 12px;
+                width: 36px;
+                height: 36px;
+            }
+            .back-link svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        @media (max-width: 300px) {
+            .back-link {
+                bottom: 8px;
+                left: 8px;
+                width: 30px;
+                height: 30px;
+            }
+            .back-link svg {
+                width: 14px;
+                height: 14px;
+            }
+        }
             .back-link svg {
                 width: 20px;
                 height: 20px;

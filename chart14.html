@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bubble Chart - Multi-Variable Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 50%, #fa709a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .chart-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 50%;
+            transition: all 0.3s;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 10;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-3px);
+        }
+
+        .back-link svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        @media (max-width: 768px) {
+            .back-link {
+                bottom: 15px;
+                left: 15px;
+                width: 40px;
+                height: 40px;
+            }
+            .back-link svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .back-link {
+                bottom: 12px;
+                left: 12px;
+                width: 36px;
+                height: 36px;
+            }
+            .back-link svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        @media (max-width: 300px) {
+            .back-link {
+                bottom: 8px;
+                left: 8px;
+                width: 30px;
+                height: 30px;
+            }
+            .back-link svg {
+                width: 14px;
+                height: 14px;
+            }
+        }
+            .back-link svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </a>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Bubble {
+            constructor(x, y, size, color, label) {
+                this.x = x;
+                this.y = y;
+                this.targetX = x;
+                this.targetY = y;
+                this.size = size;
+                this.currentSize = 0;
+                this.color = color;
+                this.label = label;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+            }
+
+            update(padding, width, height) {
+                // Animate size
+                if (this.currentSize < this.size) {
+                    this.currentSize += 0.5;
+                }
+
+                // Gentle floating movement
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off edges
+                if (this.x - this.currentSize < padding || this.x + this.currentSize > width - padding) {
+                    this.vx *= -1;
+                }
+                if (this.y - this.currentSize < padding || this.y + this.currentSize > height - padding) {
+                    this.vy *= -1;
+                }
+
+                // Keep within bounds
+                this.x = Math.max(padding + this.currentSize, Math.min(width - padding - this.currentSize, this.x));
+                this.y = Math.max(padding + this.currentSize, Math.min(height - padding - this.currentSize, this.y));
+            }
+
+            draw(ctx) {
+                const gradient = ctx.createRadialGradient(
+                    this.x - this.currentSize / 3,
+                    this.y - this.currentSize / 3,
+                    0,
+                    this.x,
+                    this.y,
+                    this.currentSize
+                );
+                gradient.addColorStop(0, this.color.replace('0.6', '0.8'));
+                gradient.addColorStop(1, this.color.replace('0.6', '0.3'));
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw label
+                ctx.font = 'bold 0.9em -apple-system, sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.label, this.x, this.y);
+            }
+        }
+
+        const bubbles = [
+            new Bubble(200, 200, 60, 'rgba(255, 99, 132, 0.6)', 'A'),
+            new Bubble(400, 300, 80, 'rgba(54, 162, 235, 0.6)', 'B'),
+            new Bubble(600, 250, 50, 'rgba(255, 206, 86, 0.6)', 'C'),
+            new Bubble(300, 400, 70, 'rgba(75, 192, 192, 0.6)', 'D'),
+            new Bubble(500, 450, 55, 'rgba(153, 102, 255, 0.6)', 'E'),
+            new Bubble(700, 350, 65, 'rgba(255, 159, 64, 0.6)', 'F'),
+            new Bubble(350, 150, 45, 'rgba(199, 199, 199, 0.6)', 'G'),
+            new Bubble(550, 180, 75, 'rgba(83, 102, 255, 0.6)', 'H')
+        ];
+
+        function drawBubbleChart() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const padding = 100;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                // Horizontal lines
+                const y = padding + ((height - padding * 2) / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+
+                // Vertical lines
+                const x = padding + ((width - padding * 2) / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, height - padding);
+                ctx.stroke();
+            }
+
+            // Draw axes labels
+            ctx.font = 'bold 1em -apple-system, sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText('X Axis - Performance', width / 2, height - 40);
+            ctx.save();
+            ctx.translate(40, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Y Axis - Revenue', 0, 0);
+            ctx.restore();
+
+            // Update and draw bubbles
+            bubbles.forEach(bubble => {
+                bubble.update(padding, width, height);
+                bubble.draw(ctx);
+            });
+
+            requestAnimationFrame(drawBubbleChart);
+        }
+
+        drawBubbleChart();
+    </script>
+</body>
+</html>

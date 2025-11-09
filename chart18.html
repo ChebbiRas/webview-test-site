@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gauge Chart - Performance Meter</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 50%, #fc5c7d 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .chart-container { width: 100vw; height: 100vh; }
+        canvas { width: 100%; height: 100%; }
+        .back-link {
+            position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; border-radius: 50%; transition: all 0.3s; backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3); z-index: 10;
+        }
+        .back-link:hover { background: rgba(255, 255, 255, 0.35); transform: translateY(-3px); }
+        .back-link svg { width: 24px; height: 24px; fill: white; }
+    </style>
+</head>
+<body>
+    <div class="chart-container"><canvas id="chart"></canvas></div>
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </a>
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let targetValue = 75;
+        let currentValue = 0;
+        let needleAngle = -Math.PI / 2;
+
+        setInterval(() => { targetValue = Math.random() * 100; }, 3000);
+
+        function drawGauge() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const centerX = width / 2;
+            const centerY = height * 0.6;
+            const radius = Math.min(width, height) * 0.35;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Animate value
+            if (Math.abs(currentValue - targetValue) > 0.5) {
+                currentValue += (targetValue - currentValue) * 0.05;
+            } else {
+                currentValue = targetValue;
+            }
+
+            // Draw gauge arc
+            const startAngle = Math.PI * 0.75;
+            const endAngle = Math.PI * 2.25;
+
+            // Background arc
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.lineWidth = 30;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.stroke();
+
+            // Color gradient arc
+            const gradient = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
+            gradient.addColorStop(0, '#4ade80');
+            gradient.addColorStop(0.5, '#fbbf24');
+            gradient.addColorStop(1, '#ef4444');
+
+            const valueAngle = startAngle + (currentValue / 100) * (endAngle - startAngle);
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, valueAngle);
+            ctx.lineWidth = 30;
+            ctx.strokeStyle = gradient;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Draw ticks
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            for (let i = 0; i <= 10; i++) {
+                const angle = startAngle + (i / 10) * (endAngle - startAngle);
+                const tickRadius = radius - 20;
+                const x1 = centerX + Math.cos(angle) * tickRadius;
+                const y1 = centerY + Math.sin(angle) * tickRadius;
+                const x2 = centerX + Math.cos(angle) * (tickRadius - 15);
+                const y2 = centerY + Math.sin(angle) * (tickRadius - 15);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Labels
+                const labelRadius = tickRadius - 40;
+                const labelX = centerX + Math.cos(angle) * labelRadius;
+                const labelY = centerY + Math.sin(angle) * labelRadius;
+                ctx.font = 'bold 1em -apple-system, sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((i * 10).toString(), labelX, labelY);
+            }
+
+            // Draw needle
+            needleAngle = startAngle + (currentValue / 100) * (endAngle - startAngle);
+            const needleLength = radius - 30;
+            const needleX = centerX + Math.cos(needleAngle) * needleLength;
+            const needleY = centerY + Math.sin(needleAngle) * needleLength;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(needleX, needleY);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Needle center
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 12, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            // Value display
+            ctx.font = 'bold 3em -apple-system, sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText(Math.round(currentValue), centerX, centerY + 80);
+            ctx.font = '1.2em -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillText('Performance Score', centerX, centerY + 120);
+
+            requestAnimationFrame(drawGauge);
+        }
+        drawGauge();
+    </script>
+</body>
+</html>

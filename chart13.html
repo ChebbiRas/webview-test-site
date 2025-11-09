@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Animated Line Chart - Gradient Visualization</title>
+    <title>Stacked Area Chart - Time Series</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #4facfe 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -129,7 +129,6 @@
         const canvas = document.getElementById('chart');
         const ctx = canvas.getContext('2d');
 
-        // Set canvas size
         function resizeCanvas() {
             canvas.width = canvas.offsetWidth * window.devicePixelRatio;
             canvas.height = canvas.offsetHeight * window.devicePixelRatio;
@@ -138,116 +137,118 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Data points
-        const maxPoints = 50;
-        let dataPoints = [];
+        const datasets = [
+            { label: 'Layer 1', color: 'rgba(255, 99, 132, 0.7)', data: [] },
+            { label: 'Layer 2', color: 'rgba(54, 162, 235, 0.7)', data: [] },
+            { label: 'Layer 3', color: 'rgba(255, 206, 86, 0.7)', data: [] }
+        ];
+
+        const maxPoints = 60;
         let time = 0;
 
-        // Generate initial random data
+        // Initialize data
         for (let i = 0; i < maxPoints; i++) {
-            dataPoints.push(Math.random() * 80 + 10);
+            datasets.forEach(dataset => {
+                dataset.data.push(Math.random() * 30 + 10);
+            });
         }
 
-        // Update data every 1 second
+        // Update data
         setInterval(() => {
-            dataPoints.push(Math.random() * 80 + 10);
-            if (dataPoints.length > maxPoints) {
-                dataPoints.shift();
-            }
+            datasets.forEach(dataset => {
+                dataset.data.push(Math.random() * 30 + 10);
+                if (dataset.data.length > maxPoints) {
+                    dataset.data.shift();
+                }
+            });
         }, 1000);
 
-        function drawChart() {
+        function drawStackedAreaChart() {
             const width = canvas.offsetWidth;
             const height = canvas.offsetHeight;
+            const padding = 60;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
 
-            // Clear canvas
             ctx.clearRect(0, 0, width, height);
 
             // Draw grid
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             ctx.lineWidth = 1;
-            for (let i = 0; i < 5; i++) {
-                const y = (height / 5) * i;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight / 5) * i;
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
                 ctx.stroke();
+
+                // Y-axis labels
+                ctx.font = '0.9em -apple-system, sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.textAlign = 'right';
+                ctx.fillText((100 - i * 20).toString(), padding - 10, y + 5);
             }
 
-            // Draw gradient area
-            const gradient = ctx.createLinearGradient(0, 0, 0, height);
-            gradient.addColorStop(0, 'rgba(255, 107, 107, 0.8)');
-            gradient.addColorStop(0.5, 'rgba(238, 90, 111, 0.5)');
-            gradient.addColorStop(1, 'rgba(255, 107, 107, 0.1)');
+            // Calculate stacked values
+            const stackedData = [];
+            for (let i = 0; i < maxPoints; i++) {
+                const stack = [0];
+                datasets.forEach((dataset, idx) => {
+                    stack.push(stack[idx] + dataset.data[i]);
+                });
+                stackedData.push(stack);
+            }
 
-            ctx.beginPath();
-            ctx.moveTo(0, height);
+            const maxValue = Math.max(...stackedData.map(s => s[s.length - 1]));
 
-            dataPoints.forEach((point, index) => {
-                const x = (width / (maxPoints - 1)) * index;
-                const y = height - (point / 100) * height;
-
-                if (index === 0) {
-                    ctx.lineTo(x, y);
-                } else {
-                    const prevX = (width / (maxPoints - 1)) * (index - 1);
-                    const prevY = height - (dataPoints[index - 1] / 100) * height;
-                    const cpX = (prevX + x) / 2;
-                    ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
-                }
-            });
-
-            ctx.lineTo(width, height);
-            ctx.closePath();
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Draw line
-            const lineGradient = ctx.createLinearGradient(0, 0, width, 0);
-            lineGradient.addColorStop(0, '#ff6b6b');
-            lineGradient.addColorStop(0.5, '#ee5a6f');
-            lineGradient.addColorStop(1, '#ff6b6b');
-
-            ctx.beginPath();
-            dataPoints.forEach((point, index) => {
-                const x = (width / (maxPoints - 1)) * index;
-                const y = height - (point / 100) * height;
-
-                if (index === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    const prevX = (width / (maxPoints - 1)) * (index - 1);
-                    const prevY = height - (dataPoints[index - 1] / 100) * height;
-                    const cpX = (prevX + x) / 2;
-                    ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
-                }
-            });
-
-            ctx.strokeStyle = lineGradient;
-            ctx.lineWidth = 4;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
-
-            // Draw points
-            dataPoints.forEach((point, index) => {
-                const x = (width / (maxPoints - 1)) * index;
-                const y = height - (point / 100) * height;
+            // Draw stacked areas (reverse order for proper stacking)
+            for (let d = datasets.length - 1; d >= 0; d--) {
+                const gradient = ctx.createLinearGradient(0, padding, 0, height - padding);
+                gradient.addColorStop(0, datasets[d].color);
+                gradient.addColorStop(1, datasets[d].color.replace('0.7', '0.3'));
 
                 ctx.beginPath();
-                ctx.arc(x, y, 6, 0, Math.PI * 2);
-                ctx.fillStyle = 'white';
+                ctx.moveTo(padding, height - padding);
+
+                for (let i = 0; i < maxPoints; i++) {
+                    const x = padding + (chartWidth / (maxPoints - 1)) * i;
+                    const y = height - padding - (stackedData[i][d + 1] / maxValue) * chartHeight;
+                    if (i === 0) {
+                        ctx.lineTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+
+                // Draw bottom edge
+                for (let i = maxPoints - 1; i >= 0; i--) {
+                    const x = padding + (chartWidth / (maxPoints - 1)) * i;
+                    const y = height - padding - (stackedData[i][d] / maxValue) * chartHeight;
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.closePath();
+                ctx.fillStyle = gradient;
                 ctx.fill();
-                ctx.strokeStyle = '#ff6b6b';
-                ctx.lineWidth = 3;
-                ctx.stroke();
+            }
+
+            // Draw legend
+            datasets.forEach((dataset, idx) => {
+                const legendX = width - 150;
+                const legendY = 40 + idx * 30;
+                ctx.fillStyle = dataset.color;
+                ctx.fillRect(legendX, legendY, 20, 20);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 0.9em -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(dataset.label, legendX + 30, legendY + 15);
             });
 
             time++;
-            requestAnimationFrame(drawChart);
+            requestAnimationFrame(drawStackedAreaChart);
         }
 
-        drawChart();
+        drawStackedAreaChart();
     </script>
 </body>
 </html>

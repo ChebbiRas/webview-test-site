@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Candlestick Chart - Financial Data</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+        .chart-container { width: 100vw; height: 100vh; }
+        canvas { width: 100%; height: 100%; }
+        .back-link {
+            position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; border-radius: 50%; transition: all 0.3s; backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3); z-index: 10;
+        }
+        .back-link:hover { background: rgba(255, 255, 255, 0.35); transform: translateY(-3px); }
+        .back-link svg { width: 24px; height: 24px; fill: white; }
+    </style>
+</head>
+<body>
+    <div class="chart-container"><canvas id="chart"></canvas></div>
+    <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </a>
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const candles = [];
+        let basePrice = 100;
+        const maxCandles = 40;
+
+        // Generate initial candles
+        for (let i = 0; i < maxCandles; i++) {
+            const open = basePrice + (Math.random() - 0.5) * 10;
+            const close = open + (Math.random() - 0.5) * 15;
+            const high = Math.max(open, close) + Math.random() * 5;
+            const low = Math.min(open, close) - Math.random() * 5;
+            candles.push({ open, high, low, close });
+            basePrice = close;
+        }
+
+        // Update candles
+        setInterval(() => {
+            const lastClose = candles[candles.length - 1].close;
+            const open = lastClose;
+            const close = open + (Math.random() - 0.5) * 15;
+            const high = Math.max(open, close) + Math.random() * 5;
+            const low = Math.min(open, close) - Math.random() * 5;
+            candles.push({ open, high, low, close });
+            if (candles.length > maxCandles) candles.shift();
+        }, 2000);
+
+        function drawCandlestick() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const padding = { top: 40, right: 40, bottom: 60, left: 60 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const allPrices = candles.flatMap(c => [c.high, c.low]);
+            const minPrice = Math.min(...allPrices);
+            const maxPrice = Math.max(...allPrices);
+            const priceRange = maxPrice - minPrice;
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (chartHeight / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                const price = maxPrice - (priceRange / 5) * i;
+                ctx.font = '0.9em -apple-system, sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.textAlign = 'right';
+                ctx.fillText(price.toFixed(2), padding.left - 10, y + 5);
+            }
+
+            // Draw candles
+            const candleWidth = chartWidth / (maxCandles * 1.5);
+            candles.forEach((candle, index) => {
+                const x = padding.left + index * (chartWidth / (maxCandles - 1));
+                const openY = padding.top + chartHeight - ((candle.open - minPrice) / priceRange) * chartHeight;
+                const closeY = padding.top + chartHeight - ((candle.close - minPrice) / priceRange) * chartHeight;
+                const highY = padding.top + chartHeight - ((candle.high - minPrice) / priceRange) * chartHeight;
+                const lowY = padding.top + chartHeight - ((candle.low - minPrice) / priceRange) * chartHeight;
+
+                const isGreen = candle.close > candle.open;
+                const color = isGreen ? '#4ade80' : '#ef4444';
+
+                // Draw wick
+                ctx.beginPath();
+                ctx.moveTo(x, highY);
+                ctx.lineTo(x, lowY);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw body
+                const bodyTop = Math.min(openY, closeY);
+                const bodyHeight = Math.abs(closeY - openY) || 1;
+                ctx.fillStyle = color;
+                ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+            });
+
+            // Labels
+            ctx.font = 'bold 1em -apple-system, sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time Series', width / 2, height - 20);
+
+            requestAnimationFrame(drawCandlestick);
+        }
+        drawCandlestick();
+    </script>
+</body>
+</html>
